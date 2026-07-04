@@ -1,0 +1,13 @@
+<mujoco model="go2_scene">
+  <include file="go2.xml"/>
+
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.2 0.2 0.2" rgb2="0.3 0.3 0.3" width="300" height="300"/>
+    <material name="ground" texture="grid" texrepeat="10 10" reflectance="0.1"/>
+  </asset>
+
+  <worldbody>
+    <!-- 平面地面 -->
+    <geom name="floor" type="plane" size="10 10 0.1" pos="0 0 -0.005" material="ground" condim="3"/>
+  </worldbody>
+</mujoco>

@@ -1,0 +1,105 @@
+# Go2 MuJoCo Sim2Sim 配置文件
+# 遵循 LeggedLab G1 参考代码 (unitree_g1_lab.yaml) 的格式和命名规范
+#
+# 注意：初始姿态使用训练默认姿态(default_angles_lab)，
+# 基座高度降至 0.305m 使脚刚好着地。
+# 观测偏移基准 = default_angles_lab，确保站立时偏移 ≈ 0。
+
+# === 文件路径 ===
+policy_path: "logs/rsl_rl/go2_demo/2026-06-27_17-21-26/exported/policy.pt"  # 策略文件 (MLP 教师网络)
+xml_path: "deploy_mujoco/resources/robots/go2_description/scene.xml"  # MuJoCo 模型
+
+# === 仿真参数 ===
+simulation_dt: 0.005          # MuJoCo 仿真步长 (s) —— 与训练 sim.dt 一致
+control_decimation: 4         # 策略控制间隔（每 N 个仿真步执行一次策略推理）
+simulation_duration: 600.0    # 仿真总时长 (s)
+
+# === 观测/动作维度 ===
+num_obs: 247                  # 教师网络观测维度（PolicyCfg 定义，完整 247 维）
+num_actions: 12                # 动作维度（Go2 共 12 个关节）
+policy_input_dim: 247          # 策略输入维度（MLP 教师网络直接使用 247 维，无需填充）
+
+# === 观测缩放因子（必须与训练 PolicyCfg 一致）===
+lin_vel_scale: 1.0            # base_lin_vel scale
+ang_vel_scale: 0.2            # base_ang_vel scale
+dof_pos_scale: 1.0            # joint_pos scale
+dof_vel_scale: 0.05           # joint_vel scale
+dof_effort_scale: 0.01        # joint_effort scale
+
+# === 动作参数 ===
+action_scale: 0.25            # 默认动作缩放（thigh/calf 关节）
+action_scale_hip: 0.125       # hip 关节动作缩放（通常更小，避免侧翻）
+clip_actions: 1.0            # 动作裁剪限制（与 G1 参考代码一致）
+
+# === 指令参数 ===
+cmd_scale: [1.0, 1.0, 1.0]   # 指令缩放 [vx, vy, omega_z]
+max_cmd: [1.0, 1.0, 1.0]     # 最大指令 [vx, vy, omega_z]
+
+# ============================================================
+# PD 站立模式（按 B 关闭 RL 后使用）
+# ============================================================
+kp: [50.0, 50.0, 50.0, 50.0,  # [FL_hip, FL_thigh, FL_calf, FR_hip]
+     50.0, 50.0, 50.0, 50.0,  # [FR_thigh, FR_calf, RL_hip, RL_thigh]
+     50.0, 50.0, 50.0, 50.0]  # [RL_calf, RR_hip, RR_thigh, RR_calf]
+kd: [5.0, 5.0, 5.0, 5.0,
+     5.0, 5.0, 5.0, 5.0,
+     5.0, 5.0, 5.0, 5.0]
+
+# PD 站姿与 RL 策略默认姿态均使用 default_angles_lab
+# MuJoCo 初始基座高度降至 0.305m 使脚着地
+
+# ============================================================
+# RL 模式（按 B 打开 RL 后使用）
+# ============================================================
+kps: [50.0, 50.0, 50.0, 50.0,  # RL 模式位置增益（通常比 PD 站立更强）
+      50.0, 50.0, 50.0, 50.0,
+      50.0, 50.0, 50.0, 50.0]
+kds: [5.0, 5.0, 5.0, 5.0,    # RL 模式速度增益
+      5.0, 5.0, 5.0, 5.0,
+      5.0, 5.0, 5.0, 5.0]
+
+default_angles_lab:             # 训练时的默认关节角度（Lab 顺序，用于观测偏移）
+  - 0.1                        # FL_hip_joint  — 来自 unitree.py 训练初始姿态
+  - 0.8                        # FL_thigh_joint
+  - -1.5                       # FL_calf_joint
+  - -0.1                       # FR_hip_joint
+  - 0.8                        # FR_thigh_joint
+  - -1.5                       # FR_calf_joint
+  - 0.1                        # RL_hip_joint
+  - 1.0                        # RL_thigh_joint （后腿比前腿稍前倾）
+  - -1.5                       # RL_calf_joint
+  - -0.1                       # RR_hip_joint
+  - 1.0                        # RR_thigh_joint
+  - -1.5                       # RR_calf_joint
+
+# === 关节名称映射 ===
+joint_names_lab:               # 策略训练时的关节顺序（Lab 顺序，与 default_angles_lab 一致）
+  - "FL_hip_joint"
+  - "FL_thigh_joint"
+  - "FL_calf_joint"
+  - "FR_hip_joint"
+  - "FR_thigh_joint"
+  - "FR_calf_joint"
+  - "RL_hip_joint"
+  - "RL_thigh_joint"
+  - "RL_calf_joint"
+  - "RR_hip_joint"
+  - "RR_thigh_joint"
+  - "RR_calf_joint"
+
+joint_names_mujoco:            # MuJoCo 树序（与 data.qpos[7:] 一致）
+  - "FL_hip_joint"
+  - "FL_thigh_joint"
+  - "FL_calf_joint"
+  - "FR_hip_joint"
+  - "FR_thigh_joint"
+  - "FR_calf_joint"
+  - "RL_hip_joint"
+  - "RL_thigh_joint"
+  - "RL_calf_joint"
+  - "RR_hip_joint"
+  - "RR_thigh_joint"
+  - "RR_calf_joint"
+
+# === 物理限制 ===
+torque_limits: 23.5             # 关节最大力矩 (Nm)，来自 go2.xml actuatorfrcrange
